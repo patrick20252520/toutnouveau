@@ -174,7 +174,19 @@ jobs:
       - name: Connect Tailscale
         run: |
           Write-Host "=== TAILSCALE CONNECTION ==="
-          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$env:GITHUB_RUN_ID --accept-routes --accept-dns=false --shields-up=false --advertise-exit-node=false
+          
+          # VÃ©rifier si le secret existe
+          $authKey = "${{ secrets.TAILSCALE_AUTHKEY }}"
+          if ([string]::IsNullOrEmpty($authKey)) {
+              Write-Host "ERROR: TAILSCALE_AUTHKEY secret is missing!"
+              Write-Host "Please add the secret in GitHub Settings > Secrets > Actions"
+              Write-Host "Secret name: TAILSCALE_AUTHKEY"
+              Write-Host "Secret value: Your Pre-approved Tailscale auth key (tskey-auth-...)"
+              exit 1
+          }
+          
+          Write-Host "Auth key found, connecting to Tailscale..."
+          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=$authKey --hostname=gh-runner-$env:GITHUB_RUN_ID --accept-routes --accept-dns=false --shields-up=false --advertise-exit-node=false
           Write-Host "Tailscale connection initiated"
           
           $tsIP = $null
