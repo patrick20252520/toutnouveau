@@ -320,7 +320,30 @@ jobs:
           $batAll = "@echo off`ncd /d D:\Script`necho Launching Python scripts...`nstart `"Residential GUI`" cmd /k python.exe usa_residential_gui.py`ntimeout /t 2 /nobreak >nul`nstart `"Trustworthy`" cmd /k python.exe FINAL_3_WINDOWS_TRUSTWORTHY-Parfait.py`necho Scripts launched!"
           $batAll | Out-File -FilePath "$toolboxDesktop\Launch-ALL-Scripts.bat" -Encoding ASCII -Force
           
-          $torBat = "@echo off`ncd /d `"C:\Tor Browser\Browser`"`nstart firefox.exe"
+          # CrÃ©er un script PowerShell pour activer le toggle et lancer Tor
+          $torScript = @'
+# Configurer Tor pour auto-connect
+$torBrowserData = "C:\Tor Browser\Browser\TorBrowser\Data"
+$browserProfilePath = "$torBrowserData\Browser"
+if (-not (Test-Path $browserProfilePath)) { New-Item -Path $browserProfilePath -ItemType Directory -Force | Out-Null }
+$profiles = Get-ChildItem -Path $browserProfilePath -Directory -ErrorAction SilentlyContinue
+if ($profiles.Count -eq 0) {
+    $profilePath = "$browserProfilePath\profile.default"
+    New-Item -Path $profilePath -ItemType Directory -Force | Out-Null
+} else {
+    $profilePath = $profiles[0].FullName
+}
+$userPrefsPath = "$profilePath\user.js"
+'user_pref("extensions.torlauncher.start_tor", true);' | Out-File -FilePath $userPrefsPath -Encoding ASCII -Force
+'user_pref("extensions.torlauncher.prompt_at_startup", false);' | Out-File -FilePath $userPrefsPath -Encoding ASCII -Append
+'user_pref("extensions.torlauncher.quickstart", true);' | Out-File -FilePath $userPrefsPath -Encoding ASCII -Append
+Start-Process "C:\Tor Browser\Browser\firefox.exe"
+'@
+          $torScriptPath = "$toolboxDesktop\Launch-Tor.ps1"
+          $torScript | Out-File -FilePath $torScriptPath -Encoding UTF8 -Force
+          
+          # CrÃ©er un BAT qui lance le script PowerShell
+          $torBat = "@echo off`npowershell.exe -ExecutionPolicy Bypass -File `"$torScriptPath`""
           $torBat | Out-File -FilePath "$toolboxDesktop\Tor-Browser.bat" -Encoding ASCII -Force
           
           # TÃ©lÃ©charger PsExec pour lancer les scripts dans la session interactive
